@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import qutip as qc
 
@@ -65,14 +66,28 @@ def CO_swap(Chromosome, val):
         Chromosome[2 * k0, :] = C[:, 0]
         Chromosome[2 * k0 + 1, :] = C[:, 1]
         val[2 * k0] = v[0]
-        val[2 * k0 + 1] = v[1]
+        val[2 * k0 + 1] = v[2]
 
     return Chromosome, val
 
 
-def MU_iswap(Chromosome):
-    return np.dot(Chromosome, np.array(qc.iswap().full()))
+def CO_iswap(Chromosome, val):
+    l = Chromosome.shape[0] // 2
+    for k0 in range(l):
+        C0 = Chromosome[2 * k0, :]
+        C1 = Chromosome[2 * k0 + 1, :]
+        C = np.hstack((C0, C1))
+        v = np.hstack(([val[2 * k0], 0], [val[2 * k0 + 1], 0]))
+        C = np.dot(np.array(qc.iswap().full()), C)
+        v = np.dot(np.array(qc.iswap().full()), v)
 
+        C = C.reshape((-1, 2))
+        Chromosome[2 * k0, :] = C[:, 0]
+        Chromosome[2 * k0 + 1, :] = C[:, 1]
+        val[2 * k0] = v[0]
+        val[2 * k0 + 1] = v[2]
+
+    return Chromosome, val
 
 def MU_sqrtswap(Chromosome):
     return np.dot(Chromosome, np.array(qc.sqrtswap().full()))
@@ -85,39 +100,72 @@ def MU_sqrtiswap(Chromosome):
 def MU_sqrtnot(Chromosome):
     return np.dot(Chromosome, np.array(qc.sqrtnot().full()))
 
+
+def calc_PSDsigma_mu(X):
+    X = X - np.mean(X)
+    N = len(X)
+    sigma = np.std(X)
+    Fr = np.fft.fft(X)
+    Frconj = np.conj(Fr)
+    Sxx = Fr * Frconj / ((2 * N - 1) * (sigma ** 2.0))
+    return np.std(np.abs(Sxx)), np.mean(np.abs(Sxx))
+
+
 if __name__ == '__main__':
 
     # initialization
-    NGenes = 4
+    NGenes = 128
+    NIterations = 1000
     Chromosome = chromosome_initialization(NGenes)
-    print("####################### initialization")
-    print(Chromosome)
+    # print("####################### initialization")
+    # print(Chromosome)
 
-    for k in range(100):
+    track_mean = np.zeros(NIterations)
+    track_std = np.zeros(NIterations)
+    track_PSDstd = np.zeros(NIterations)
+    track_PSDmu = np.zeros(NIterations)
+    for k in range(NIterations):
         print("####################################### k=", str(k))
         # measurement
         mask1, mask2, val = measure_chromosome(Chromosome, NGenes)
-        print("### mask ###")
-        print(mask1, "____", mask2)
+        # print("### mask ###")
+        #print(mask1, "____", mask2)
 
         # rotation
-        Chromosome[mask1, :], val = CO_swap(Chromosome[mask1, :], val)
+        if np.any(mask1):
+            Chromosome[mask1, :], val = CO_iswap(Chromosome[mask1, :], val)
+            # Chromosome[mask1, :], val = CO_swap(Chromosome[mask1, :], val)      ## only affects Beta
+            ## PSD goes from sigma 0.75 to 2.5
+            ## mean 0.5
+
+
+
         # Chromosome[mask1,:] = CO_qubit_rotation(Chromosome[mask1,:])
-        print("### rotation / cross over ###")
-        print(Chromosome)
+        # print("### rotation / cross over ###")
+        #print(Chromosome)
 
         # mutation
-        Chromosome[mask2, :] = MU_qubit_rotation(Chromosome[mask2, :])
-        print("### mutation ###")
-        print(Chromosome)
+        if np.any(mask2):
+            Chromosome[mask2, :] = MU_qubit_rotation(Chromosome[mask2, :])  ## affects Beta principally
+        # print("### mutation ###")
+        #print(Chromosome)
 
         # fitness
-        print("### fitness ###")
-        print("mean = ", str(np.mean(val)))
-        print("std = ", str(np.std(val)))
+        # print("### fitness ###")
+        track_mean[k] = np.mean(val)
+        track_std[k] = np.std(val)
+        track_PSDstd[k], track_PSDmu[k] = calc_PSDsigma_mu(val)
 
+        print("mean = ", str(track_mean[k]))
+        print("std = ", str(track_std[k]))
+        print("PSDstd = ", str(track_PSDstd[k]))
+        print("PSDmu = ", str(track_PSDmu[k]))
 
-
+    plt.plot(np.arange(0, len(track_mean), 1), track_mean, 'b.-')
+    plt.plot(np.arange(0, len(track_std), 1), track_std, 'r.-')
+    plt.plot(np.arange(0, len(track_PSDstd), 1), track_PSDstd, 'g.-')
+    plt.plot(np.arange(0, len(track_PSDmu), 1), track_PSDmu, 'm.-')
+    plt.show()
 
         # print(Chromosome)
 
