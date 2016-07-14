@@ -52,53 +52,69 @@ def CO_rz(Chromosome, phase=np.pi / 8):
     return np.dot(Chromosome, np.array(qc.rz(phase).full()))
 
 
-def CO_swap(Chromosome, val):
+def CO_swap(Chromosome):
     l = Chromosome.shape[0] // 2
     for k0 in range(l):
         C0 = Chromosome[2 * k0, :]
         C1 = Chromosome[2 * k0 + 1, :]
         C = np.hstack((C0, C1))
-        v = np.hstack(([val[2 * k0], 0], [val[2 * k0 + 1], 0]))
         C = np.dot(np.array(qc.swap().full()), C)
-        v = np.dot(np.array(qc.swap().full()), v)
-
         C = C.reshape((-1, 2))
         Chromosome[2 * k0, :] = C[:, 0]
         Chromosome[2 * k0 + 1, :] = C[:, 1]
-        val[2 * k0] = v[0]
-        val[2 * k0 + 1] = v[2]
-
-    return Chromosome, val
+    return Chromosome
 
 
-def CO_iswap(Chromosome, val):
+def CO_iswap(Chromosome):
     l = Chromosome.shape[0] // 2
     for k0 in range(l):
         C0 = Chromosome[2 * k0, :]
         C1 = Chromosome[2 * k0 + 1, :]
         C = np.hstack((C0, C1))
-        v = np.hstack(([val[2 * k0], 0], [val[2 * k0 + 1], 0]))
         C = np.dot(np.array(qc.iswap().full()), C)
-        v = np.dot(np.array(qc.iswap().full()), v)
-
         C = C.reshape((-1, 2))
         Chromosome[2 * k0, :] = C[:, 0]
         Chromosome[2 * k0 + 1, :] = C[:, 1]
-        val[2 * k0] = v[0]
-        val[2 * k0 + 1] = v[2]
-
-    return Chromosome, val
+    return Chromosome
 
 def MU_sqrtswap(Chromosome):
-    return np.dot(Chromosome, np.array(qc.sqrtswap().full()))
+    l = Chromosome.shape[0] // 2
+    for k0 in range(l):
+        C0 = Chromosome[2 * k0, :]
+        C1 = Chromosome[2 * k0 + 1, :]
+        C = np.hstack((C0, C1))
+        C = np.dot(np.array(qc.sqrtswap().full()), C)
+        C = C.reshape((-1, 2))
+        Chromosome[2 * k0, :] = C[:, 0]
+        Chromosome[2 * k0 + 1, :] = C[:, 1]
+    return Chromosome
 
 
 def MU_sqrtiswap(Chromosome):
-    return np.dot(Chromosome, np.array(qc.sqrtiswap().full()))
+    l = Chromosome.shape[0] // 2
+    for k0 in range(l):
+        C0 = Chromosome[2 * k0, :]
+        C1 = Chromosome[2 * k0 + 1, :]
+        C = np.hstack((C0, C1))
+        C = np.dot(np.array(qc.sqrtiswap().full()), C)
+        C = C.reshape((-1, 2))
+        Chromosome[2 * k0, :] = C[:, 0]
+        Chromosome[2 * k0 + 1, :] = C[:, 1]
+    return Chromosome
 
 
 def MU_sqrtnot(Chromosome):
-    return np.dot(Chromosome, np.array(qc.sqrtnot().full()))
+    l = Chromosome.shape[0] // 2
+    for k0 in range(l):
+        C0 = Chromosome[2 * k0, :]
+        C1 = Chromosome[2 * k0 + 1, :]
+        C = np.hstack((C0, C1))
+        C = np.dot(np.array(qc.sqrtnot().full()), C)
+        C = C.reshape((-1, 2))
+        Chromosome[2 * k0, :] = C[:, 0]
+        Chromosome[2 * k0 + 1, :] = C[:, 1]
+    return Chromosome
+
 
 
 def calc_PSDsigma_mu(X):
