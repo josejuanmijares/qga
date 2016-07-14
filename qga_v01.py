@@ -125,7 +125,7 @@ if __name__ == '__main__':
     track_PSDstd = np.zeros(NIterations)
     track_PSDmu = np.zeros(NIterations)
     for k in range(NIterations):
-        print("####################################### k=", str(k))
+        print("####################################### k=%d"%k)
         # measurement
         mask1, mask2, val = measure_chromosome(Chromosome, NGenes)
         # print("### mask ###")
