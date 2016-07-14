@@ -110,6 +110,9 @@ def calc_PSDsigma_mu(X):
     Sxx = Fr * Frconj / ((2 * N - 1) * (sigma ** 2.0))
     return np.std(np.abs(Sxx)), np.mean(np.abs(Sxx))
 
+def MU_rot(Chromosomes,phi):
+    pauli_x = [[0,1],[1,0]]
+    return np.dot(np.dot(Chromosomes, qc.phasegate(phi)),pauli_x)
 
 if __name__ == '__main__':
 
