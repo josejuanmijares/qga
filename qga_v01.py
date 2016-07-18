@@ -11,6 +11,7 @@ def chromosome_initialization(NGenes: int = 1, nbits=1):
     temp = np.array((temp.unit()).full()).flatten()
     return np.array([temp for k in range(NGenes)]).reshape((-1, 2))
 
+
 def measure_chromosome(Chromosome, NGenes: int = 1):
     mask1 = []
     mask2 = []
@@ -32,19 +33,22 @@ def measure_chromosome(Chromosome, NGenes: int = 1):
     return mask1, mask2, val
 
 
-
 # single gene
 def CO_swap_alpha(Chromosome, phase=np.pi / 8):
     return np.dot(Chromosome, np.array(qc.swapalpha(phase).full()))
 
+
 def CO_rx(Chromosome, phase=np.pi / 8):
     return np.dot(Chromosome, np.array(qc.rx(phase).full()))
+
 
 def CO_ry(Chromosome, phase=np.pi / 8):
     return np.dot(Chromosome, np.array(qc.ry(phase).full()))
 
+
 def CO_rz(Chromosome, phase=np.pi / 8):
     return np.dot(Chromosome, np.array(qc.rz(phase).full()))
+
 
 # Double genes
 def CO_swap(Chromosome):
@@ -59,6 +63,7 @@ def CO_swap(Chromosome):
         Chromosome[2 * k0 + 1, :] = C[:, 1]
     return Chromosome
 
+
 def CO_iswap(Chromosome):
     l = Chromosome.shape[0] // 2
     for k0 in range(l):
@@ -72,29 +77,37 @@ def CO_iswap(Chromosome):
     return Chromosome
 
 
-
-
-
 # Single gene
 def MU_Pauli_z(Chromosome):
-    pauli_z = np.array([[1,0],[0,-1]], dtype=complex)
+    pauli_z = np.array([[1, 0], [0, -1]], dtype=complex)
     return np.dot(Chromosome, pauli_z)
 
+
 def MU_Pauli_y(Chromosome):
-    pauli_y = np.array([[0,-1.j],[1.j,0]], dtype=complex)
+    pauli_y = np.array([[0, -1.j], [1.j, 0]], dtype=complex)
     return np.dot(Chromosome, pauli_y)
 
+
 def MU_Pauli_x(Chromosome):
-    pauli_x = np.array([[0,1],[1,0]], dtype=complex)
+    pauli_x = np.array([[0, 1], [1, 0]], dtype=complex)
     return np.dot(Chromosome, pauli_x)
 
-def MU_Phase_shift(Chromosome, phase = np.pi/8.0):
+
+def MU_Phase_shift(Chromosome, phase=np.pi / 8.0):
     r = np.array(qc.phasegate(phase).full())
     return np.dot(Chromosome, r)
 
-def MU_rot(Chromosomes,phi):
-    pauli_x = np.array([[0,1],[1,0]], dtype=complex)
-    return np.dot(np.dot(Chromosomes, qc.phasegate(phi)),pauli_x)
+
+def MU_rot(Chromosomes, phi):
+    pauli_x = np.array([[0.0, 1.0], [1.0, 0.0]])
+
+    l = Chromosome.shape[0]
+    for k0 in range(l):
+        C = Chromosomes[k0, :]
+        C = np.dot(C, qc.phasegate(phi))
+        C = np.dot(C, pauli_x)
+        Chromosomes[k0, :] = C
+    return np.dot(np.dot(Chromosomes, qc.phasegate(phi)), pauli_x)
 
 
 # Double genes
@@ -110,6 +123,7 @@ def MU_sqrtswap(Chromosome):
         Chromosome[2 * k0 + 1, :] = C[:, 1]
     return Chromosome
 
+
 def MU_sqrtiswap(Chromosome):
     l = Chromosome.shape[0] // 2
     for k0 in range(l):
@@ -121,6 +135,7 @@ def MU_sqrtiswap(Chromosome):
         Chromosome[2 * k0, :] = C[:, 0]
         Chromosome[2 * k0 + 1, :] = C[:, 1]
     return Chromosome
+
 
 def MU_sqrtnot(Chromosome):
     l = Chromosome.shape[0] // 2
@@ -145,20 +160,22 @@ def calc_PSDsigma_mu(X):
     return np.std(np.abs(Sxx)), np.mean(np.abs(Sxx))
 
 
-def test(f0,f0arg,f1,f1arg, Niter, NGenes, Ch0):
-
+def test(f0, f0arg, f1, f1arg, Niter, NGenes, Ch0):
     Ch = Ch0.copy()
-
+    l = 0
     for k in range(Niter):
         # measurement
         mask0, mask1, val = measure_chromosome(Ch, NGenes)
 
         # Cross-Over
-        if np.sum(mask0)>1:
-            Ch[mask0, :] = eval(f0 + '('+f0arg+')')
+        if np.sum(mask0) > 1:
+            Ch[mask0, :] = eval(f0 + '(' + f0arg + ')')
 
         # Mutation
-        if np.sum(mask1)>1:
+        if np.sum(mask1) > 1:
+            if l == 0:
+                print(f1 + '(' + f1arg + ')')
+                l = 1
             Ch[mask1, :] = eval(f1 + '(' + f1arg + ')')
 
     return calc_PSDsigma_mu(val)
@@ -168,25 +185,28 @@ if __name__ == '__main__':
 
     # initialization
     NGenes = 128
-    NIterations = 1000
+    NIterations = 10
     Chromosome = chromosome_initialization(NGenes)
     # print("####################### initialization")
     # print(Chromosome)
-    phase = np.array([0.125,  0.25,  0.5,  0.75,  0.875])*np.pi
-    CO_p =[None, None, *phase, *phase, *phase, *phase]
+    phase = np.array([0.125, 0.25, 0.5, 0.75, 0.875]) * np.pi
+    CO_p = [None, None, *phase, *phase, *phase, *phase]
     MU_p = [None, None, None, None, None, None, *phase, *phase]
 
-    CO_function = ['CO_swap', 'CO_iswap', 'CO_swap_alpha', 'CO_swap_alpha', 'CO_swap_alpha', 'CO_swap_alpha', 'CO_swap_alpha',
-                      'CO_rx', 'CO_rx', 'CO_rx', 'CO_rx', 'CO_rx',
-                      'CO_ry', 'CO_ry', 'CO_ry', 'CO_ry', 'CO_ry',
-                      'CO_rz', 'CO_rz', 'CO_rz', 'CO_rz', 'CO_rz']
+    CO_function = ['CO_swap', 'CO_iswap', 'CO_swap_alpha', 'CO_swap_alpha', 'CO_swap_alpha', 'CO_swap_alpha',
+                   'CO_swap_alpha',
+                   'CO_rx', 'CO_rx', 'CO_rx', 'CO_rx', 'CO_rx',
+                   'CO_ry', 'CO_ry', 'CO_ry', 'CO_ry', 'CO_ry',
+                   'CO_rz', 'CO_rz', 'CO_rz', 'CO_rz', 'CO_rz']
 
-    MU_function = ['MU_Pauli_x','MU_Pauli_y','MU_Pauli_z', 'MU_sqrtswap','MU_sqrtiswap','MU_sqrtnot', 'MU_Phase_shift', 'MU_Phase_shift', 'MU_Phase_shift', 'MU_Phase_shift', 'MU_Phase_shift','MU_rot', 'MU_rot', 'MU_rot', 'MU_rot', 'MU_rot']
+    MU_function = ['MU_Pauli_x', 'MU_Pauli_y', 'MU_Pauli_z', 'MU_sqrtswap', 'MU_sqrtiswap', 'MU_sqrtnot',
+                   'MU_Phase_shift', 'MU_Phase_shift', 'MU_Phase_shift', 'MU_Phase_shift', 'MU_Phase_shift', 'MU_rot',
+                   'MU_rot', 'MU_rot', 'MU_rot', 'MU_rot']
 
     sigma_array = np.zeros((22, 16))
     mu_array = np.zeros((22, 16))
-    for i,(f0, Ang0) in enumerate(zip(CO_function,CO_p)):
-        for j,(f1, Ang1) in enumerate(zip(MU_function, MU_p)):
+    for i, (f0, Ang0) in enumerate(zip(CO_function, CO_p)):
+        for j, (f1, Ang1) in enumerate(zip(MU_function, MU_p)):
             if Ang0:
                 f0arg = 'Ch[mask0,:], ' + str(Ang0)
             else:
@@ -197,8 +217,8 @@ if __name__ == '__main__':
             else:
                 f1arg = 'Ch[mask1,:]'
             start = timeit.timeit()
-            sigma_array[i,j], mu_array[i,j] = test(f0,f0arg,f1,f1arg,1000,NGenes,Chromosome)
-            print([i,j,f0,f1, np.abs(timeit.timeit()- start) ])
+            sigma_array[i, j], mu_array[i, j] = test(f0, f0arg, f1, f1arg, 1000, NGenes, Chromosome)
+            print([i, j, f0, f1, np.abs(timeit.timeit() - start)])
     print(sigma_array)
 
 
