@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import qutip as qc
 import timeit
+import pickle
 
 
 def chromosome_initialization(NGenes: int = 1, nbits=1):
@@ -34,10 +35,6 @@ def measure_chromosome(Chromosome, NGenes: int = 1):
 
 
 # single gene
-def CO_swap_alpha(Chromosome, phase=np.pi / 8):
-    return np.dot(Chromosome, np.array(qc.swapalpha(phase).full()))
-
-
 def CO_rx(Chromosome, phase=np.pi / 8):
     return np.dot(Chromosome, np.array(qc.rx(phase).full()))
 
@@ -51,6 +48,18 @@ def CO_rz(Chromosome, phase=np.pi / 8):
 
 
 # Double genes
+def CO_swap_alpha(Chromosome, phase=np.pi / 8):
+    l = Chromosome.shape[0] // 2
+    for k0 in range(l):
+        C0 = Chromosome[2 * k0, :]
+        C1 = Chromosome[2 * k0 + 1, :]
+        C = np.hstack((C0, C1))
+        C = np.dot(np.array(qc.swapalpha(phase).full()), C)
+        C = C.reshape((-1, 2))
+        Chromosome[2 * k0, :] = C[:, 0]
+        Chromosome[2 * k0 + 1, :] = C[:, 1]
+    return Chromosome
+
 def CO_swap(Chromosome):
     l = Chromosome.shape[0] // 2
     for k0 in range(l):
@@ -98,16 +107,16 @@ def MU_Phase_shift(Chromosome, phase=np.pi / 8.0):
     return np.dot(Chromosome, r)
 
 
-def MU_rot(Chromosomes, phi):
+def MU_rot(Chromosome, phi):
     pauli_x = np.array([[0.0, 1.0], [1.0, 0.0]])
-
     l = Chromosome.shape[0]
     for k0 in range(l):
-        C = Chromosomes[k0, :]
-        C = np.dot(C, qc.phasegate(phi))
-        C = np.dot(C, pauli_x)
-        Chromosomes[k0, :] = C
-    return np.dot(np.dot(Chromosomes, qc.phasegate(phi)), pauli_x)
+        C = Chromosome[k0,:]
+        C = np.dot(C,np.array(qc.phasegate(phi).full()))
+        C = np.array(np.dot(C, pauli_x))
+
+        Chromosome[k0,:] = C
+    return Chromosome
 
 
 # Double genes
@@ -174,7 +183,6 @@ def test(f0, f0arg, f1, f1arg, Niter, NGenes, Ch0):
         # Mutation
         if np.sum(mask1) > 1:
             if l == 0:
-                print(f1 + '(' + f1arg + ')')
                 l = 1
             Ch[mask1, :] = eval(f1 + '(' + f1arg + ')')
 
@@ -185,7 +193,7 @@ if __name__ == '__main__':
 
     # initialization
     NGenes = 128
-    NIterations = 10
+    NIterations = 1000
     Chromosome = chromosome_initialization(NGenes)
     # print("####################### initialization")
     # print(Chromosome)
@@ -217,11 +225,13 @@ if __name__ == '__main__':
             else:
                 f1arg = 'Ch[mask1,:]'
             start = timeit.timeit()
-            sigma_array[i, j], mu_array[i, j] = test(f0, f0arg, f1, f1arg, 1000, NGenes, Chromosome)
+            sigma_array[i, j], mu_array[i, j] = test(f0, f0arg, f1, f1arg,  NIterations, NGenes, Chromosome)
             print([i, j, f0, f1, np.abs(timeit.timeit() - start)])
     print(sigma_array)
 
-
+    file = open('data_1000.pkl','wb')
+    pickle.dump((sigma_array,mu_array),file)
+    file.close()
 
 
     #
